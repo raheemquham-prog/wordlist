@@ -1,28 +1,34 @@
-import itertools
+import random
 import string
 
-letters = string.ascii_letters  # a-zA-Z
-digits = string.digits          # 0-9
+letters = string.ascii_letters
+digits = string.digits
+MAX_LINES = 10_000_000   # ~90MB — safe for your 5GB VM
 
-def is_valid(combo):
-    digit_count = sum(c.isdigit() for c in combo)
-    if digit_count > 3:
-        return False
-    for i in range(len(combo) - 1):
-        a, b = combo[i], combo[i+1]
-        if a.isdigit() and b.isdigit():          # no two digits adjacent
-            return False
-        if a.isalpha() and b.isalpha() and a.lower() == b.lower():  # no same letter adjacent (case-insensitive)
-            return False
-    return True
+def generate_valid(length=8, max_digits=3):
+    while True:
+        combo = []
+        digit_count = 0
+        prev = ""
+        for i in range(length):
+            can_use_digit = (digit_count < max_digits) and (not prev.isdigit())
+            if can_use_digit and random.random() < 0.3:
+                c = random.choice(digits)
+                digit_count += 1
+            else:
+                c = random.choice(letters)
+                while prev.isalpha() and c.lower() == prev.lower():
+                    c = random.choice(letters)
+            combo.append(c)
+            prev = c
+        return "".join(combo)
 
-charset = letters + digits
-count = 0
+seen = set()
 with open("wordlist.txt", "w") as f:
-    for combo in itertools.product(charset, repeat=8):
-        word = "".join(combo)
-        if is_valid(word):
-            f.write(word + "\n")
-            count += 1
+    while len(seen) < MAX_LINES:
+        w = generate_valid()
+        if w not in seen:
+            seen.add(w)
+            f.write(w + "\n")
 
-print(f"Generated {count} valid combinations")
+print(f"Done: {len(seen)} lines written")
